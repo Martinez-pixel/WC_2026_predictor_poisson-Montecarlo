@@ -25,13 +25,25 @@ rating.
 ## Repo structure
 
 ```
-wc_predictor.py          # engine: get_lambda, simular_partido, build_elo, recent_form
-partido_individual.ipynb # demo: single-match prediction using live API-Football data
-bracket_completo.ipynb   # demo: full remaining bracket simulation, no API needed
-resultados_reales.csv    # matches already played, updated as the tournament progresses
+wc_predictor.py                    # engine: get_lambda, simular_partido, build_elo, recent_form
+usa_vs_bosnia_wc2026.ipynb         # original single-match demo (USA vs Bosnia, Round of 32)
+wc2026_partidos_hoy.ipynb          # generalized single-match predictor, runs on any day's fixtures
+wc2026_simulacion_restante.ipynb   # full remaining bracket simulation, no API needed
+*.png                              # saved dashboards per match (e.g. Spain_vs_Austria_2026-07-02.png)
 requirements.txt
+README.md
 ```
 
+## Installation
+
+```bash
+git clone https://github.com/<your-username>/WC_2026_predictor_poisson-Montecarlo
+cd WC_2026_predictor_poisson-Montecarlo
+pip install -r requirements.txt
+```
+
+`usa_vs_bosnia_wc2026.ipynb` and `wc2026_partidos_hoy.ipynb` need an API-Football key (free tier
+works, with a daily request limit). `wc2026_simulacion_restante.ipynb` doesn't need one.
 ## Data sources
 
 - **Historical international results:** [martj42/international_results](https://github.com/martj42/international_results)
