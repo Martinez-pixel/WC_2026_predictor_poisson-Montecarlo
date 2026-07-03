@@ -27,7 +27,7 @@ rating.
 ```
 wc_predictor.py                    # engine: get_lambda, simular_partido, build_elo, recent_form
 usa_vs_bosnia_wc2026.ipynb         # original single-match demo (USA vs Bosnia, Round of 32)
-wc2026_partidos_hoy.ipynb          # generalized single-match predictor, runs on any day's fixtures
+wc2026_partidos_hoy.ipynb          # generalized single-match predictor
 wc2026_simulacion_restante.ipynb   # full remaining bracket simulation, no API needed
 *.png                              # saved dashboards per match (e.g. Spain_vs_Austria_2026-07-02.png)
 requirements.txt
