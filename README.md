@@ -1,96 +1,96 @@
-# WC_2026_predictor_poisson-Montecarlo
-This repository intends to create (just for fun), a posible outcome for what will happen in the current World Cup.
-## How it works
+# World Cup 2026 Predictor
 
-For every match, an expected goals value (λ) is calculated for each team, blending three sources:
+Modelo de predicción para partidos y bracket del Mundial 2026, basado en ratings Elo,
+forma reciente y simulación Monte Carlo sobre un proceso de Poisson.
 
-| Source | Weight | What it captures |
+Dos formas de usarlo:
+
+- **Predicción de un partido específico** con datos en vivo del torneo (API-Football): estadísticas
+  de goles, forma, alineaciones y bajas confirmadas.
+- **Simulación del bracket completo restante**, sin depender de API: solo con Elo histórico y forma
+  reciente, corre desde ronda de 32 hasta la final.
+
+## Cómo funciona el modelo
+
+Para cada partido se calcula un λ (goles esperados) por equipo, mezclando tres fuentes:
+
+| Fuente | Peso | Qué captura |
 |---|---|---|
-| Current tournament stats (API-Football) | 50% | Most recent, tournament-specific form |
-| Weighted historical form (last 10 games, 0.85 decay) | 35% | Recent momentum outside the tournament |
-| Elo ratio | 15% | Long-term team strength, stabilizes small samples |
+| Stats del torneo actual (API-Football) | 50% | Forma más reciente y directa, específica del Mundial |
+| Forma histórica ponderada (últimos 10 partidos, decay 0.85) | 35% | Momentum reciente fuera del torneo |
+| Ratio de Elo | 15% | Nivel de largo plazo, estabiliza cuando hay poca muestra |
 
-With both λ values (home and away), the model runs Monte Carlo simulations over a Poisson process
-(30k–100k runs depending on the notebook) to get the full outcome distribution — not just the most
-likely result, but Over/Under, BTTS and exact scoreline probabilities too.
+Con los dos λ (local y visitante) se corren simulaciones de Poisson (30k–100k según el notebook)
+para sacar la distribución completa de resultados — no solo el resultado más probable, también
+Over/Under, BTTS y marcadores exactos.
 
-**Real home advantage** (1.08–1.12x) only applies to **the United States, Mexico and Canada**,
-whether they're listed as home or away — they're the only teams with an actual host advantage in
-this World Cup. Every other match uses a much smaller nominal factor or none at all.
+**Localía real** (factor 1.08–1.12) solo se aplica a **Estados Unidos, México y Canadá**, sean local
+o visitante en la ficha del partido — son los únicos con ventaja de anfitrión real en este Mundial.
+El resto de los partidos usa un factor nominal mucho menor o ninguno.
 
-**Knockout rounds:** there's no draw possible, so the model separates 90 minutes, extra time and
-penalties. Penalty odds sit close to 50/50, with a small adjustment for the team with the better Elo
-rating.
+**Rondas eliminatorias:** no hay empate posible, así que el modelo separa 90 minutos, prórroga y
+penales. En penales la ventaja se reduce a casi 50/50 con un ligero ajuste por el equipo con mejor
+Elo.
 
-## Repo structure
+## Estructura del repo
 
 ```
-wc_predictor.py                    # engine: get_lambda, simular_partido, build_elo, recent_form
-usa_vs_bosnia_wc2026.ipynb         # original single-match demo (USA vs Bosnia, Round of 32)
-wc2026_partidos_hoy.ipynb          # generalized single-match predictor
-wc2026_simulacion_restante.ipynb   # full remaining bracket simulation, no API needed
-*.png                              # saved dashboards per match (e.g. Spain_vs_Austria_2026-07-02.png)
+wc_predictor.py          # motor: get_lambda, simular_partido, build_elo, recent_form
+partido_individual.ipynb # demo: predicción de un partido puntual con datos de API-Football
+bracket_completo.ipynb   # demo: simulación de todo el bracket restante, sin API
+resultados_reales.csv    # partidos ya jugados, se actualiza conforme avanza el torneo
 requirements.txt
-README.md
 ```
 
-## Installation
+## Datos
+
+- **Histórico de resultados internacionales:** [martj42/international_results](https://github.com/martj42/international_results)
+- **Datos en vivo del torneo:** [API-Football](https://www.api-football.com/)
+
+## Instalación
 
 ```bash
-git clone https://github.com/<your-username>/WC_2026_predictor_poisson-Montecarlo
-cd WC_2026_predictor_poisson-Montecarlo
+git clone https://github.com/<tu-usuario>/world_cup_predictions_2026
+cd world_cup_predictions_2026
 pip install -r requirements.txt
 ```
 
-`usa_vs_bosnia_wc2026.ipynb` and `wc2026_partidos_hoy.ipynb` need an API-Football key (free tier
-works, with a daily request limit). `wc2026_simulacion_restante.ipynb` doesn't need one.
-## Data sources
+Para usar el notebook de partido individual necesitas una API key de API-Football (hay plan gratuito
+con límite de requests por día). El notebook de bracket completo no la necesita.
 
-- **Historical international results:** [martj42/international_results](https://github.com/martj42/international_results)
-- **Live tournament data:** [API-Football](https://www.api-football.com/)
-
-## Installation
-
-```bash
-git clone https://github.com/<your-username>/WC_2026_predictor_poisson-Montecarlo
-cd WC_2026_predictor_poisson-Montecarlo
-pip install -r requirements.txt
-```
-
-`partido_individual.ipynb` needs an API-Football key (free tier works, with a daily request limit).
-`bracket_completo.ipynb` doesn't need one.
-
-## Quick usage
+## Uso rápido
 
 ```python
-from wc_predictor import load_history, build_elo, simular_partido
+from wc_predictor import simular_partido, build_elo
+import pandas as pd
 
-df = load_history()
+df = pd.read_csv('https://raw.githubusercontent.com/martj42/international_results/master/results.csv',
+                  parse_dates=['date'])
 elo = build_elo(df)
 
-result = simular_partido(df, elo, 'Spain', 'Austria', ronda='R32')
-print(result)
+resultado = simular_partido('Spain', 'Austria', ronda='R32')
+print(resultado)
 ```
 
-## Assumptions and limitations
+## Supuestos y limitaciones
 
-- Elo is calculated from 2000 onward, with a variable K-factor by competition type (World Cup >
-  continental cups > qualifiers > friendlies).
-- With little or no direct head-to-head history, that signal is weighted low (10%) on purpose — one
-  or two matches from years ago shouldn't skew the prediction.
-- API-Football lineups and injury data are only available ~1 hour before kickoff; running earlier
-  just falls back to tournament stats.
-- This is a support tool, not a guarantee — Poisson assumes independent goal events, a reasonable
-  but imperfect simplification of real football.
+- El Elo se calcula desde 2000 en adelante, con K variable por tipo de torneo (Mundial > Copas
+  continentales > eliminatorias > amistosos).
+- Con pocos o ningún head-to-head directo, el peso de esa señal es bajo (10%) a propósito — no
+  queremos que 1-2 partidos de hace años sesguen la predicción.
+- Las alineaciones y bajas de API-Football solo están disponibles ~1 hora antes del kickoff; si se
+  corre antes, el modelo sigue funcionando solo con stats del torneo.
+- Es un modelo de apoyo, no una garantía — Poisson asume goles independientes entre sí, que es una
+  simplificación razonable pero no perfecta del fútbol real.
 
-## Credits
+## Créditos
 
-This project started from the idea behind [mar-antaya/world_cup_predictions](https://github.com/mar-antaya/world_cup_predictions),
-which is also where the historical dataset (martj42) came from. From there the approach went a
-different way: instead of a per-match XGBoost classifier, this uses a Poisson model with Monte Carlo
-simulation, adds API-Football for live tournament data, and simulates the full knockout bracket
-(Elo, recent form, extra time and penalties included).
+Este proyecto arrancó a partir de la idea de [mar-antaya/world_cup_predictions](https://github.com/mar-antaya/world_cup_predictions),
+de donde también tomé el dataset histórico de martj42. A partir de ahí el enfoque se fue por otro
+lado: en vez de un clasificador XGBoost por partido, este modelo usa Poisson con simulación Monte
+Carlo, integra API-Football para datos en vivo del torneo, y simula el bracket eliminatorio completo
+(Elo, forma reciente, prórroga y penales incluidos).
 
-## License
+## Licencia
 
 MIT
